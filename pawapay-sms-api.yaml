@@ -1,0 +1,509 @@
+openapi: 3.0.0
+info:
+  title: pawaPay SMS GATEWAY API
+  description: |
+    pawaPay SMS API helps you add SMS capabilities to your applications and access to the customers in the African market. pawaPay SMS API covers everything from sending a simple single message to a single destination, up to bluk sending of  messages to the thousands of recipients with a single API request.
+  contact:
+    name: pawaPay Support
+    email: support@pawapay.co.uk
+  version: "v1"
+  # Updated: 08.03.21
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: "https://virtserver.swaggerhub.com/pawapay-smsgateway/pawapay-smsgateway/v1"
+tags:
+  - name: SMS
+    description: Send SMS to mobile subscribers (MT or Mobile Terminated)
+paths:
+  /sms:
+    post:
+      tags:
+        - SMS
+      summary: Send SMS
+      description: >-
+        Using this API you can send a single message, a group of messages, or one message to a wide range of recipients.
+        This API call is <em>idempotent</em>. That is, it is safe to re-sumbit an SMS request with the same `smsId`<br> ##TODO 
+      requestBody:
+        $ref: '#/components/requestBodies/SmsCreationRequest'
+      responses:
+        '201':
+          description: >-
+            Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SmsCreationResponse'
+              examples:
+                Mixed response:
+                  value:
+                    - smsId: f4401bd2-1568-4140-bf2d-eb77d2b2b639
+                      status: ACCEPTED
+                      created: '2020-10-19T11:17:01Z'
+                    - smsId: f4401bd2-1568-4140-bf2d-eb77d2b2b639
+                      status: DUPLICATE_IGNORED
+                      created: '2020-10-19T10:22:49Z'
+                    - smsId: f4401bd2-1568-4140-bf2d-eb77d2b2b639
+                      status: REJECTED
+                      rejectionReason:
+                        rejectionCode: INVALID_RECIPIENT
+                        rejectionMessage: Recipient's number format is not valid for this country
+        '400':
+          description: >-
+            API Incompatibility<br>
+            Send request has been rejected due to incompatibility with pawaPay API specification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Missing mandatory field:
+                  value:
+                    errorId: 4f0d5e13-7e88-4cc6-827c-8c0640dc2cd3
+                    errorCode: 1
+                    errorMessage: 'Invalid input: Missing required creator property ''amount'''
+        '401': 
+          description: >-
+            Authentication Failure<br>
+            If authentication has failed. Please make sure that valid
+            authentication token is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Failed authentication:
+                  value:
+                    errorId: cad1529e-040b-4c9d-a21d-2ba3056ff750
+                    errorCode: 2
+                    errorMessage: Authentication error
+        '403':
+          description: >-
+            Authorization Failure<br>
+            If authentication was successful, but authorization has failed.
+            Please make sure that valid authentication token is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Failed authorization:
+                  value:
+                    errorId: daa495f0-541d-4192-b636-a8877b25a510
+                    errorCode: 3
+                    errorMessage: Authorization error
+        '500':
+          description: >-
+            System Error<br>
+            Statuses of submitted SMS messages are undetermined. You might need to check your statuses or try to submit your messages again with the same `smsId`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                System error:
+                  value:
+                    errorId: d428a89e-fa8b-42b8-ba20-68be20d50af1
+                    errorCode: 0
+                    errorMessage: Internal error
+
+  #'/sms/logs/'
+# sms/get?from=1&to=2&nextpage=36333834-7f32-4adf-a45d-4473503707ae#1614887432
+# from, to, nextpage, limit
+  '/sms/{smsId}/':
+    get:
+      tags:
+        - SMS
+      summary: Get outbound SMS status and logs
+      description: You can get status and other details for the SMS messages that has been previously sent using smsId which has been specified earlier. A list with at most one `SMS` will be returned.
+      parameters:
+        - name: smsId
+          in: path
+          description: >-
+            Unique identifier of the SMS. This has been either optionally provided by the customer, or otherwise is provided by pawaPay.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 36
+          example: 8917c345-4791-4285-a416-62f24b6982db
+      responses:
+        '200':
+          description: If a request has been processed by pawaPay successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsSearchResult'
+              examples: #todo examples should be fixed
+                DELIVERED SMS:
+                  value:
+                    - smsId: 8917c345-4791-4285-a416-62f24b6982db
+                      to: '256780334452'
+                      from: ACME_Corp
+                      smsCount: 3
+                      status: DELIVERED
+                      created: '2020-10-19T08:17:00Z'
+                      sent: '2020-10-19T08:18:01Z'
+                SMS not found:
+                  value: []
+
+        '400':
+          description: >-
+            API Incompatibility<br>
+            Send request has been rejected due to incompatibility with pawaPay API specification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Missing mandatory field:
+                  value:
+                    errorId: 4f0d5e13-7e88-4cc6-827c-8c0640dc2cd3
+                    errorCode: 1
+                    errorMessage: 'Invalid input: Missing required creator property ''amount'''
+        '401': 
+          description: >-
+            Authentication Failure<br>
+            If authentication has failed. Please make sure that valid
+            authentication token is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Failed authentication:
+                  value:
+                    errorId: cad1529e-040b-4c9d-a21d-2ba3056ff750
+                    errorCode: 2
+                    errorMessage: Authentication error
+        '403':
+          description: >-
+            Authorization Failure<br>
+            If authentication was successful, but authorization has failed.
+            Please make sure that valid authentication token is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Failed authorization:
+                  value:
+                    errorId: daa495f0-541d-4192-b636-a8877b25a510
+                    errorCode: 3
+                    errorMessage: Authorization error
+        '500':
+          description: >-
+            System Error<br>
+            Statuses of submitted SMS messages are undetermined. You might need to check your statuses or try to submit your messages again with the same `smsId`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                System error:
+                  value:
+                    errorId: d428a89e-fa8b-42b8-ba20-68be20d50af1
+                    errorCode: 0
+                    errorMessage: Internal error
+
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:        
+      type: apiKey
+      in: header       
+      name: X-API-KEY  # TODO
+
+  schemas:
+    Destination:
+      type: object
+      required:
+        - to
+      properties:
+        smsId:
+          minLength: 1
+          maxLength: 36
+          type: string
+          description: >-
+            An optional customer-side message identifier that uniquely identifies the SMS. If smsId is not provided, then pawaPay will automatically assign a unique identifier to the message. Any further attempts to send a message with the same smsId will be ignored by pawaPay. Only ASCII printable characters are allowed. pawaPay assigned IDs will be in the form of v4 UUIDs.
+          example: f4401bd2-1568-4140-bf2d-eb77d2b2b639
+        to:
+          type: string
+          description: >-
+            SMS destination number. Expected format:
+             1. Only digits without whitespaces or any other separators or prefixes like '+'.
+             2. Should not start with zero.
+             3. Country code is mandatory.
+             4. Should not exceed or be less than the valid length of the mobile numbers in the specified country.
+             <p>Not permitted samples:<br> +233558708954, 233 558 708954, 233-558-708954, 0233558708954, 558708954
+          example: '233558708954'
+
+    ErrorResponse: #todo to be checked with SMS Gateway error mechanism
+      type: object
+      required:
+        - errorId
+        - errorCode
+        - errorMessage
+      properties:
+        errorId: #todo to check with Roozbeh
+          type: string
+          maxLength: 36
+          description: This error's unique  ID in pawaPay system in the UUID format. 
+          example: 63743264-7292-11ea-bc55-0242ac130003
+        errorCode:
+          type: integer
+          description: pawaPay internal error code.
+          example: 1
+        errorMessage:
+          type: string
+          description: Error message.
+          example: Internal error
+    Sms:
+    #todo, should we return the telco?
+    #todo, should I add additional data like min, max, format, example, ...?
+      type: object
+      required:
+        - smsId
+        - from
+        - to
+        - body
+        - smsCount
+        - status
+      description: >-
+        SMS object which will be return in the callbacks and in response to get requests.
+      properties:
+        smsId:
+          type: string
+          description: The unique identifier of the SMS which has been either provided by the custome or by pawaPay.
+        from:
+          type: string
+          description: SMS Sender ID.
+        to:
+          type: string
+          description: SMS destination address
+        body:
+          type: string
+          description: Text of the sent SMS message 
+        smsCount: 
+          type: integer
+          description: The number of parts of the SMS was split into.
+        status:
+          $ref: '#/components/schemas/SmsStatus'
+        highPriority: 
+          type: boolean
+          description: The priority of the message. 
+        validity: 
+          type: integer
+          description: Specified validity duration of the SMS in minutes. 
+        dateToSend:  #todo, should I keep it as is?
+          type: string
+          description: Reserved.
+          format: date-time
+        type:  #todo, should I keep it as is?
+          type: string 
+          description: Reserved.
+        encoding: #todo, should I keep it as is?
+          type: string
+          description: Reserved.
+
+    SmsCreationRequest:
+      type: object
+      required:
+        - from
+        - body
+        - destinations
+      properties:
+        from:
+          minLength: 3
+          maxLength: 15
+          type: string
+          description: >-
+            Sender ID which can be alphanumeric or numeric. Alphanumeric Sender IDs can contain upper case or lower case characters, numbers and space. In case of numeric values, it should be only digits without whitespaces or any separators.
+          example: ACME_Corp
+        body:
+          minLength: 1  
+          maxLength: 1600 #todo max length?
+          type: string
+          description: >-
+            Text of your SMS message which should be less than 1600 characters. If the body of your SMS message is more than 160 GSM-7 characters or 70 UCS-2 characters, pawaPay will automatically break it down and your message will be sent as a multi-part SMS. 
+          example: Dear customer, your subscription will expire tomorrow. 
+        destinations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Destination'
+        callbackUrl:  #todo min / max lenght
+          type: string
+          default: No callbacks
+          description: >-
+            The callback URL to receive Delivery Reports. If not provided, no callbacks will be sent for the sent messages.
+            Default value: No callbacks
+          example: https://callback.yourcompany.com/sms/
+        highPriority: 
+          type: boolean
+          default: false
+          example: true
+          description: >-
+            Specifies the priority of the message. If `true` then the SMS will be sent with a high priority, which results in almost immediate delivery and a different fee. It is useful for verification codes, OTPs, etc.<br>
+              Default value: `false`
+        validity:
+          type: integer
+          default: 1440 minutes (24 Hours) #todo 
+          description: >-
+            Validity duration of SMSes in minutes. If the validity period of an SMS expires, the SMS won't be sent and will be failed. The maximum accepted validity period is 24 hours. Values more than 24 hours will automatically be considered as 24 hours. <br>
+              Default value: 24 Hours 
+          example: 120
+        dateToSend: #todo, should I keep it as is?
+          type: string
+          description: Reserved.
+          format: date-time
+          example: '2021-02-21T17:32:28Z'
+          default: Immediately
+        type:  #todo, should I keep it as is?
+          type: string 
+          default: NORMAL
+          enum: #Defined as enum (and not boolean) to support potential future new types.
+            - NORMAL
+            - FLASH
+            - BINARY
+          description: Reserved.
+          example: NORMAL
+        encoding: #todo, should I keep it as is?
+          type: string
+          enum:
+            - TEXT
+            - UNICODE
+            - AUTO
+          description: Reserved.
+          default: "AUTO"
+          example: UNICODE
+    
+    SmsCreationResponse:
+      type: object
+      required:
+        - smsId
+        - status
+      properties:
+        smsId:
+          type: string
+          minLength: 1
+          maxLength: 36
+          description: >-
+            The unique identifier of the SMS which has been either provided by the custome or by pawaPay. IDs provided by pawaPay will have UUID v4 format. 
+          example: f4401bd2-1568-4140-bf2d-eb77d2b2b639
+        status:
+          $ref: '#/components/schemas/SmsCreationStatus'
+        created:
+          type: string
+          description: >-
+            The timestamp of when the SMS was created in the pawaPay system.<br>
+            Has the following format: <a href="https://tools.ietf.org/html/rfc3339#section-5.6">RFC3339 section 5.6, date-time</a>.<br>
+          format: date-time
+          example: '2020-02-21T17:32:29Z'
+        rejectionReason:
+          $ref: '#/components/schemas/SmsRejectionReason'
+    SmsCreationStatus: #todo maybe should use a separate name not to be mixed with SMS actual Status 
+      type: string
+      description: >-
+        Indicates if the new Send SMS request has been accepted, rejected or if it was a duplicate message
+        and has been igonred
+
+        * `ACCEPTED`: Send SMS request has been accepted. 
+
+        * `REJECTED`: Send SMS request has been rejected. See `SmsRejectionReason` for details. 
+
+        * `DUPLICATE_IGNORED`: Send SMS request has been ignored as the `smsId` is duplicated.
+      enum:
+        - ACCEPTED
+        - REJECTED
+        - DUPLICATE_IGNORED
+      example: ACCEPTED
+    SmsRejectionReason:
+      type: object
+      required:
+        - rejectionCode
+      properties:
+        rejectionCode: #This is an enum but the name is Code. For Error, Code refer to int
+          type: string
+          description: >
+            Enumeration presenting details in case of failure: 
+
+            * `INVALID_SENDER`: The sender ID is invalid. 
+
+            * `INVALID_RECIPIENT`: The destination number is invalid. 
+
+            * `INVALID_PARAMETER`: One or more parameters are invalid. 
+
+            * `SEND_SMS_NOT_ALLOWED` - Sending SMS are not allowed for this customer or this recipient.
+          example: PARAMETER_INVALID
+          enum:
+            - INVALID_SENDER
+            - INVALID_RECIPIENT
+            - INVALID_PARAMETER
+            - SEND_SMS_NOT_ALLOWED
+        rejectionMessage:
+          type: string
+          description: Additional optional rejection message
+          example: You don't have permission to send messages to this destination's country
+    SmsSearchResult:
+      type: array
+      items:
+        $ref: '#/components/schemas/Sms'
+
+    SmsStatus:
+      type: array
+      description: >-
+        List of different statuses of the SMS together with the update date of that status.
+      items:
+          type: object
+          properties:
+            status: 
+              type: string
+              description: >-
+                Enumeration presenting the status of the SMS: 
+        
+                * `ACCEPTED` - The SMS send request has been accepted by pawaPay. 
+        
+                * `REJECTED`: Send SMS request has been rejected.
+        
+                * `SENT` - The SMS request has been submitted to the mobile operator, with no response yet. 
+        
+                * `DELIVERED` - Final state: SMS was successfully delivered.
+        
+                * `UNDELIVERED` - Final state: Unable to deliver SMS to this number.
+        
+                * `FAILED` - Final state: Failed to deliver SMS to this number.
+
+                * `EXPIRED` - Final state: SMS is expired and won't be sent.
+        
+              enum:
+                - ACCEPTED
+                - REJECTED
+                - SENT
+                - DELIVERED
+                - UNDELIVERED
+                - FAILED
+                - EXPIRED
+              example: DELIVERED
+        
+            statusUpdateDate: 
+              type: string
+              description: >-
+                The timestamp of when the SMS was created in the pawaPay system.<br>
+                Has the following format: <a href="https://tools.ietf.org/html/rfc3339#section-5.6">RFC3339 section 5.6, date-time</a>.<br>
+              format: date-time
+              example: '2020-02-21T17:32:29Z'              
+
+  requestBodies:
+    SmsCreationRequest:
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SmsCreationRequest'
+      required: true
